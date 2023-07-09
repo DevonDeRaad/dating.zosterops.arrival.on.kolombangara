@@ -2,6 +2,10 @@
 title: "Zosterops note dating distribution investigation"
 format: html
 editor: visual
+toc: true
+toc-title: Document Contents
+number-sections: true
+embed-resources: true
 ---
 
 ## Conservative interpretation
