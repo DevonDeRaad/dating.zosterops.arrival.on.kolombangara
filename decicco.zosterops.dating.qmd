@@ -1,0 +1,253 @@
+---
+title: "Zosterops note dating distribution investigation"
+format: html
+editor: visual
+---
+
+## Conservative interpretation
+
+```{r}
+library(ape)
+
+#read in trees
+trees<-read.nexus("~/Downloads/snapper.1000.trees")
+
+###node 1 (estimated murphyi arrival on Kolombangara)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("kul","spl","par","tet","lut","vel","pal"))
+
+#open empty vector to hold values
+rootheight<-c()
+#calculate the root height for each tree from the posterior distribution post burn-in (first 600 samples)
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+rootheight<-rootheight[rootheight > 0.2312 & rootheight < 0.362]
+#plot histogram showing the distribution of the 95% HPD for this node age
+hist(rootheight, breaks = 25, col="red", xlim = c(0.75,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight), lty="dashed")
+
+
+###node 2 (kulambangarae conservative interpretation)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("eic","gri","lon","mur","pal","spl","lut","vel"))
+
+#open empty vector to hold values
+rootheight2<-c()
+#calculate the root height for each tree
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight2[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+rootheight2<-rootheight2[rootheight2 > 0.3793 & rootheight2 < 0.5961]
+#plot
+hist(rootheight2, breaks = 25, col="blue", xlim = c(0.75,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight2), lty="dashed")
+
+c1 <- rgb(173,216,230,max = 255, alpha = 80, names = "lt.blue")
+c2 <- rgb(255,192,203, max = 255, alpha = 80, names = "lt.pink")
+
+hist(rootheight, breaks = seq(0,0.75,.005), col=c1, xlim = c(0.75,0), ylim=c(0,200),xaxp=c(0.75,0,3), xlab = "MYA",
+     main = "95% HPD for arrival of kulambangarae (pink)\nand murphyi (blue) on Kolombangara")
+abline(v=mean(rootheight), lty="dashed")
+
+hist(rootheight2, breaks = seq(0,0.75,.005), col=c2, xlim = c(0.75,0), xaxp=c(0.75,0,3), add=TRUE)
+abline(v=mean(rootheight2), lty="dashed")
+```
+
+## Repeat without using the 95% HPD to constrict the distributions
+
+```{r}
+trees<-read.nexus("~/Downloads/snapper.1000.trees")
+
+###node 1 (murphyi)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("kul","spl","par","tet","lut","vel","pal"))
+
+#open empty vector to hold values
+rootheight<-c()
+#calculate the root height for each tree
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+#rootheight<-rootheight[rootheight > 0.24793818664346112 & rootheight < 0.41752905096159354]
+#plot
+hist(rootheight, breaks = 25, col="red", xlim = c(0.75,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight), lty="dashed")
+
+
+###node 2 (kulambangarae conservative interpretation)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("eic","gri","lon","mur","pal","spl","lut","vel"))
+
+#open empty vector to hold values
+rootheight2<-c()
+#calculate the root height for each tree
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight2[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+#rootheight2<-rootheight2[rootheight2 > 0.3817963667629687 & rootheight2 < 0.6105213813449495]
+#plot
+hist(rootheight2, breaks = 25, col="blue", xlim = c(1,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight2), lty="dashed")
+
+c1 <- rgb(173,216,230,max = 255, alpha = 80, names = "lt.blue")
+c2 <- rgb(255,192,203, max = 255, alpha = 80, names = "lt.pink")
+
+hist(rootheight, breaks = seq(0,1,.01), col=c1, xlim = c(1,0), ylim=c(0,350),xaxp=c(1,0,4),
+     xlab = "MYA", main = "Full posterior distribution of putative arrival times for\nkulambangarae (pink) and murphyi (blue) on Kolombangara")
+abline(v=mean(rootheight), lty="dashed")
+
+hist(rootheight2, breaks = seq(0,1,.01), col=c2, xlim = c(1,0), xaxp=c(1,0,4), add=TRUE)
+abline(v=mean(rootheight2), lty="dashed")
+```
+
+## Test random draws from these two distributions
+
+```{r}
+##if you randomly select two points from each posterior distribution, how often does kulambangarae arrive before murphyi?
+#1K random draws
+rh<-c()
+rh2<-c()
+for (i in 1:1000){
+  rh[i]<-sample(rootheight, size=1)
+  rh2[i]<-sample(rootheight2, size=1)
+}
+
+table(rh2 > rh)
+
+#perform a random draw from each distribution, and record whether murphyi or kulambangarae arrives first. Then repeat 1K times.
+#record the proportion of times (out of the 1K random draws) that murphyi arrived before kulambangarae. Then repeat this entire procedure 1K times.
+pr<-c()
+for (j in c(1:1000)){
+  rh<-c()
+  rh2<-c()
+  for (i in 1:1000){
+    rh[i]<-sample(rootheight, size=1)
+    rh2[i]<-sample(rootheight2, size=1)
+  }
+  pr[j]<-sum(rh>rh2)/length(rh)
+}
+
+#histogram showing the results of the 1K individual simulations (each simulating 1K random draws)
+#proportion of times that murphyi arrives first centers on 1%, never exceeding 2%.
+hist(pr, xlab="each individual value in this histogram represents the proportion\nof times murphyi arrived before kulambangarae across 1000 random draws")
+abline(v=mean(pr), lty="dashed")
+```
+
+This shows that even if you choose the conservative node for dating murphyi's arrival, you have a less than 0.1% chance of recovering a scenario where kulambangarae arrived first.
+
+## Add in third node distribution to plot on the snapp tree
+
+```{r}
+#read in trees
+trees<-read.nexus("~/Downloads/snapper.1000.trees")
+
+###node 1 (murphyi)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("kul","spl","par","tet","lut","vel","pal"))
+
+#open empty vector to hold values
+rootheight<-c()
+#calculate the root height for each tree
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+rootheight<-rootheight[rootheight > 0.2312 & rootheight < 0.362]
+#plot
+hist(rootheight, breaks = 25, col="red", xlim = c(0.75,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight), lty="dashed")
+
+
+###node 2 (kulambangarae conservative interpretation)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("eic","gri","lon","mur","pal","spl","lut","vel"))
+
+#open empty vector to hold values
+rootheight2<-c()
+#calculate the root height for each tree
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight2[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+rootheight2<-rootheight2[rootheight2 > 0.3793 & rootheight2 < 0.5961]
+#plot
+hist(rootheight2, breaks = 25, col="blue", xlim = c(0.75,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight2), lty="dashed")
+
+###node 3 (kulambangarae full new georgia group colonization interpretation)
+
+#prune the tree till only the clade you want the height of is still present
+pruned<-drop.tip.multiPhylo(trees, c("eic","gri","lon","mur","pal"))
+
+#open empty vector to hold values
+rootheight3<-c()
+#calculate the root height for each tree
+for (i in 601:length(pruned)){
+  #identify the deepest node for the given tree
+  rootheight3[i-600]<-max(branching.times(pruned[[i]]))
+}
+
+#restrict values to only those within the 95% HPD range calculated by treeannotator:
+rootheight3<-rootheight3[rootheight3 > 0.6437 & rootheight3 < 0.9846]
+#plot
+hist(rootheight3, breaks = 25, col="blue", xlim = c(0.75,0), xaxp=c(0.75,0,3))
+abline(v=mean(rootheight2), lty="dashed")
+
+c1 <- rgb(173,216,230,max = 255, alpha = 80, names = "lt.blue")
+c2 <- rgb(255,192,203, max = 255, alpha = 80, names = "lt.pink")
+c3 <- rgb(0,0,0, max = 255, alpha = 80, names = "lt.pink")
+
+#plot
+hist(rootheight, breaks = seq(0,1,.008), col=c1, xlim = c(1,0), ylim=c(0,250),xaxp=c(1,0,4), xlab = "MYA",
+     main = "95% HPD for arrival of kulambangarae (pink)\nand murphyi (blue) on Kolombangara")
+abline(v=mean(rootheight), lty="dashed")
+
+hist(rootheight2, breaks = seq(0,1,.008), col=c2, xlim = c(1,0), xaxp=c(1,0,4), add=TRUE)
+abline(v=mean(rootheight2), lty="dashed")
+
+hist(rootheight3, breaks = seq(0,1,.008), col=c3, xlim = c(1,0), xaxp=c(1,0,4), add=TRUE)
+abline(v=mean(rootheight3), lty="dashed")
+
+#save plot
+#pdf(file="~/Desktop/zost.hists.pdf", width=8.5,height=3.5)
+#hist(rootheight, breaks = seq(0,1,.008), col=c1, xlim = c(1,0), ylim=c(0,250),xaxp=c(1,0,4), #xlab = "MYA",
+#     main = "95% HPD for arrival of kulambangarae (pink)\nand murphyi (blue) on Kolombangara")
+#abline(v=mean(rootheight), lty="dashed")
+#
+#hist(rootheight2, breaks = seq(0,1,.008), col=c2, xlim = c(1,0), xaxp=c(1,0,4), add=TRUE)
+#abline(v=mean(rootheight2), lty="dashed")
+#
+#hist(rootheight3, breaks = seq(0,1,.008), col=c3, xlim = c(1,0), xaxp=c(1,0,4), add=TRUE)
+#abline(v=mean(rootheight3), lty="dashed")
+#dev.off()
+
+```
+
+## Show snapp tree with distributions
+
+```{r}
+knitr::include_graphics(c("/Users/devder/Desktop/decicco.zosterops.updated.fig.png"))
+```
